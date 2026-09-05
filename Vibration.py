@@ -1,24 +1,23 @@
 import numpy as np
 import scipy.io.wavfile as wav
-import scipy.ndimage as ndimage
 import os
 
-# --- 基礎參數 ---
-FREQUENCY = 200  # 頻率 (Hz)
-SAMPLE_RATE = 48000  # 取樣率
-OUTPUT_FOLDER = "Vibration_sample"  # 資料夾名稱
+# --- Base Parameters ---
+FREQUENCY = 200  # Frequency (Hz)
+SAMPLE_RATE = 48000  # Sample rate
+OUTPUT_FOLDER = "Vibration_sample"  # Output folder name
 
-# 建立輸出資料夾
+# Create output folder
 if not os.path.exists(OUTPUT_FOLDER):
     os.makedirs(OUTPUT_FOLDER)
 
 
 # ===========================
-#      工具函式
+#      Utility Functions
 # ===========================
 
 def generate_sine_wave(duration_ms):
-    """產生純淨的正弦波基底"""
+    """Generate a clean sine wave base"""
     num_samples = int((duration_ms / 1000) * SAMPLE_RATE)
     if num_samples == 0: return np.array([]), 0
     t = np.linspace(0, duration_ms / 1000, num_samples, endpoint=False)
@@ -27,30 +26,30 @@ def generate_sine_wave(duration_ms):
 
 
 def save_wav(filename, audio_data):
-    """將數據存為 WAV 檔"""
-    # 確保數據在 -1 到 1 之間
+    """Save the data as a WAV file"""
+    # Ensure the data stays within -1 to 1
     audio_data = np.clip(audio_data, -1.0, 1.0)
     audio_int16 = (audio_data * 32767).astype(np.int16)
     filepath = os.path.join(OUTPUT_FOLDER, filename)
     wav.write(filepath, SAMPLE_RATE, audio_int16)
-    print(f"✅ 檔案已輸出: {filepath}")
+    print(f"✅ File exported: {filepath}")
 
 
 # ===========================
-#      模式 1: 正常震動
+#      Mode 1: Standard Vibration
 # ===========================
 
 def mode_normal():
-    print("\n--- 進入 [正常模式] ---")
+    print("\n--- Entering [Standard Mode] ---")
     try:
-        ms = int(input("請輸入長度 (ms) [例如 200]: "))
-        intensity_input = float(input("請輸入強度 (0 ~ 100) [例如 90]: "))
+        ms = int(input("Enter duration (ms) [e.g. 200]: "))
+        intensity_input = float(input("Enter intensity (0 ~ 100) [e.g. 90]: "))
         intensity = intensity_input / 100.0
 
         base_wave, num_samples = generate_sine_wave(ms)
         audio = base_wave * intensity
 
-        # 前後淡入淡出 (避免啵啵聲)
+        # Fade in/out at start and end (to avoid clicking artefacts)
         fade_samples = int((2 / 1000) * SAMPLE_RATE)
         if num_samples > 2 * fade_samples:
             fade_in = np.linspace(0, 1, fade_samples)
@@ -61,21 +60,21 @@ def mode_normal():
         filename = f"Normal_{ms}ms_Vol{int(intensity_input)}.wav"
         save_wav(filename, audio)
     except ValueError:
-        print("❌ 輸入錯誤")
+        print("❌ Invalid input")
 
 
 # ===========================
-#      模式 2: 多段自訂
+#      Mode 2: Advanced Custom Segments
 # ===========================
 
 def mode_advanced_segments():
-    print("\n--- 進入 [多段自訂模式] ---")
-    print("說明：請依照順序輸入每一段的 '時間' 與 '目標強度'。")
-    print("格式範例：100,30; 200,30; 100,100; 100,0")
+    print("\n--- Entering [Advanced Segment Mode] ---")
+    print("Instructions: Enter the 'duration' and 'target intensity' for each segment, in order.")
+    print("Format example: 100,30; 200,30; 100,100; 100,0")
 
     try:
-        input_str = input("\n請輸入設定字串: ")
-        # 移除空格並用分號切割
+        input_str = input("\nEnter your sequence: ")
+        # Remove spaces and split by semicolon
         segments = input_str.replace(" ", "").split(';')
 
         time_points = [0]
@@ -86,7 +85,7 @@ def mode_advanced_segments():
             if not seg: continue
             parts = seg.split(',')
             if len(parts) != 2:
-                print(f"⚠️ 格式錯誤跳過: {seg}")
+                print(f"⚠️ Invalid format, skipped: {seg}")
                 continue
 
             dur = float(parts[0])
@@ -98,12 +97,12 @@ def mode_advanced_segments():
 
         total_ms = time_points[-1]
         if total_ms <= 0:
-            print("❌ 總長度為 0，無法產生。")
+            print("❌ Total duration is 0, cannot generate.")
             return
 
         base_wave, total_samples = generate_sine_wave(total_ms)
 
-        # 製作包絡線
+        # Build the envelope
         x_points = np.array(time_points) / 1000 * SAMPLE_RATE
         y_points = np.array(intensity_points)
         x_target = np.arange(total_samples)
@@ -117,76 +116,76 @@ def mode_advanced_segments():
         save_wav(filename, audio)
 
     except ValueError:
-        print("❌ 數值格式錯誤。")
+        print("❌ Invalid numeric format.")
 
 
 # ===========================
-#      模式 3: 分析
+#      Mode 3: Analysis
 # ===========================
 
 def mode_analyze_sequence():
-    print("\n--- 進入 [WAV 序列分析模式] ---")
+    print("\n--- Entering [WAV Sequence Analysis Mode] ---")
     files = [f for f in os.listdir(OUTPUT_FOLDER) if f.endswith(".wav")]
     if not files:
-        print(f"❌ 資料夾 {OUTPUT_FOLDER} 內沒有 WAV 檔案。")
+        print(f"❌ No WAV files found in the {OUTPUT_FOLDER} folder.")
         return
 
-    print("請選擇要分析的檔案：")
+    print("Select a file to analyse:")
     for idx, f in enumerate(files):
         print(f"{idx + 1}. {f}")
 
     try:
-        selection = int(input("請輸入編號: ")) - 1
+        selection = int(input("Enter the file number: ")) - 1
         if selection < 0 or selection >= len(files): return
 
         target_file = os.path.join(OUTPUT_FOLDER, files[selection])
         sr, data = wav.read(target_file)
         if len(data.shape) > 1: data = data[:, 0]
 
-        # 分析邏輯 (簡化顯示)
+        # Analysis logic (simplified display)
         abs_data = np.abs(data.astype(np.float32) / 32768.0)
         THRESHOLD = 0.05
         is_active = abs_data > THRESHOLD
 
-        # 簡單計算總長度與最大強度
+        # Calculate total duration and peak intensity
         file_ms = (len(data) / sr) * 1000
         max_vol = np.max(abs_data) * 100
 
-        print(f"\n📊 檔案: {files[selection]}")
-        print(f"⏱️  總長: {file_ms:.1f} ms | 最大強度: {max_vol:.1f}")
+        print(f"\n📊 File: {files[selection]}")
+        print(f"⏱️  Duration: {file_ms:.1f} ms | Peak intensity: {max_vol:.1f}")
         print("-" * 30)
 
     except Exception as e:
-        print(f"❌ 錯誤: {e}")
+        print(f"❌ Error: {e}")
 
 
 # ===========================
-#      模式 4: 快速生成 (新功能)
+#      Mode 4: Quick Generate
 # ===========================
 
 def mode_quick_generate():
-    print("\n--- 進入 [快速生成模式] ---")
-    print("說明：請輸入 '長度' 與 '強度'，用空格或逗號隔開。")
-    print("範例：200 100  (代表 200ms, 強度100)")
+    print("\n--- Entering [Quick Generate Mode] ---")
+    print("Instructions: Enter 'duration' and 'intensity', separated by a space or comma.")
+    print("Example: 200 100  (means 200ms, intensity 100)")
 
     try:
-        raw_input = input("請輸入數值: ")
-        # 將逗號替換為空格，並分割字串
+        raw_input = input("Enter values: ")
+        # Replace commas with spaces, then split the string
         parts = raw_input.replace(',', ' ').split()
 
         if len(parts) < 2:
-            print("❌ 格式錯誤，請至少輸入兩個數字 (長度 強度)")
+            print("❌ Invalid format. Please enter at least two numbers (duration intensity)")
             return
 
         ms = int(parts[0])
         intensity_val = float(parts[1])
         intensity = intensity_val / 100.0
 
-        # 1. 產生波形
+        # 1. Generate the waveform
         base_wave, num_samples = generate_sine_wave(ms)
         audio = base_wave * intensity
 
-        # 2. 淡入淡出 (保護馬達)
+        # 2. Fade in/out (to protect the motor)
         fade_samples = int((2 / 1000) * SAMPLE_RATE)
         if num_samples > 2 * fade_samples:
             fade_in = np.linspace(0, 1, fade_samples)
@@ -194,29 +193,29 @@ def mode_quick_generate():
             audio[:fade_samples] *= fade_in
             audio[-fade_samples:] *= fade_out
 
-        # 3. 輸出檔案
+        # 3. Export the file
         filename = f"Quick_{ms}ms_Vol{int(intensity_val)}.wav"
         save_wav(filename, audio)
 
     except ValueError:
-        print("❌ 輸入錯誤，請確認輸入的是數字。")
+        print("❌ Invalid input. Please make sure you entered numbers.")
 
 
 # ===========================
-#      主程式
+#      Main Program
 # ===========================
 if __name__ == "__main__":
     while True:
         print("\n==============================")
-        print(" 手錶震動產生器")
+        print(" Smartwatch Vibration Generator")
         print("==============================")
-        print("1. 正常震動 (分開輸入長度、強度)")
-        print("2. 多段自訂 (設定每段長度與音量)")
-        print("3. 讀取WAV檔")
-        print("4. 快速生成 (一行指令：長度、強度)")
-        print("q. 離開程式")
+        print("1. Standard vibration (enter duration and intensity separately)")
+        print("2. Advanced custom sequence (set duration and volume per segment)")
+        print("3. Read a WAV file")
+        print("4. Quick generate (single line: duration, intensity)")
+        print("q. Quit")
 
-        choice = input("請選擇模式 (1/2/3/4/q): ").lower()
+        choice = input("Select a mode (1/2/3/4/q): ").lower()
 
         if choice == '1':
             mode_normal()
@@ -230,4 +229,4 @@ if __name__ == "__main__":
             print("Bye Bye! 👋")
             break
         else:
-            print("無效選擇，請重試")
+            print("Invalid selection, please try again")
