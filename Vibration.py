@@ -6,7 +6,7 @@ import os
 # --- 基礎參數 ---
 FREQUENCY = 200  # 頻率 (Hz)
 SAMPLE_RATE = 48000  # 取樣率
-OUTPUT_FOLDER = "Vibration_Interactive_v6"  # 資料夾名稱
+OUTPUT_FOLDER = "Vibration_sample"  # 資料夾名稱
 
 # 建立輸出資料夾
 if not os.path.exists(OUTPUT_FOLDER):
@@ -208,12 +208,12 @@ def mode_quick_generate():
 if __name__ == "__main__":
     while True:
         print("\n==============================")
-        print(" 手錶震動產生器 v6.1 ")
+        print(" 手錶震動產生器")
         print("==============================")
         print("1. 正常震動 (分開輸入長度、強度)")
         print("2. 多段自訂 (設定每段長度與音量)")
-        print("3. 讀取 WAV 檔 (分析)")
-        print("4. 快速生成 (一行指令：長度 強度)")
+        print("3. 讀取WAV檔")
+        print("4. 快速生成 (一行指令：長度、強度)")
         print("q. 離開程式")
 
         choice = input("請選擇模式 (1/2/3/4/q): ").lower()
